@@ -1,0 +1,192 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Welcome to Astro.">
+  <main>
+    <h1>
+      Welcome to <span class="text-gradient">Nobey's QR Code Generator</span>
+    </h1>
+    <p class="instructions rounded-lg">
+      Yeah, this is literally just a templated example from Astro because I'm
+      lazy. You can use this page to generate a QR Code. It works completely in
+      your browser, I'm not hosting anything to steal your data. Though, this is
+      going to be hosted on GitHub pages so Microsoft is probably farming you
+      for your data. Sorry &#129335
+    </p>
+
+    <div class="flex flex-col md:flex-row md:space-x-4 max-md:space-y-4 mb-4">
+      <div class="w-full md:w-8/12">
+        <label
+          for="url"
+          class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+          >Enter the URL you want to generate a QR Code for</label
+        >
+        <input
+          id="url"
+          type="text"
+          class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+          placeholder="https://noahjahn.dev"
+          required
+          autocomplete="off"
+        />
+      </div>
+
+      <a
+        id="test-link"
+        href=""
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-center w-full md:w-4/12 py-1 px-8 m-auto mb-0 border rounded-lg dark:bg-green-600 dark:border-green-500 dark:text-white"
+        >Test your link</a
+      >
+    </div>
+    <button
+      id="download"
+      class="block mb-4 py-1 px-8 m-auto border rounded-lg dark:bg-green-600 dark:border-green-500 dark:text-white"
+      >Download</button
+    >
+    <img id="qrcode" class="m-auto rounded-lg" />
+  </main>
+</Layout>
+<script>
+  import QRCode from 'qrcode';
+  import sanitizeFilename from 'sanitize-filename';
+
+  const debounce = (callback: Function, wait: number) => {
+    let timeoutId: number | undefined = undefined;
+    return (...args: unknown[]) => {
+      window.clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(() => {
+        callback(...args);
+      }, wait);
+    };
+  };
+
+  function updateQrcode(text: string) {
+    QRCode.toDataURL(text, function (error, dataUrl) {
+      if (error) return console.error(error);
+      const qrCodeImg = document.getElementById('qrcode');
+      qrCodeImg?.setAttribute('src', dataUrl);
+      qrCodeImg?.setAttribute('alt', sanitizeFilename(text));
+    });
+  }
+
+  function handleInputChanges(event: Event) {
+    const text = (event?.target as HTMLInputElement).value;
+    if ('URLSearchParams' in window) {
+      const url = new URL(window.location.toString());
+      url.searchParams.set('text', text);
+      history.pushState(null, '', url);
+    }
+
+    updateQrcode(text);
+
+    const testLinkButton = document.getElementById('test-link');
+    testLinkButton?.setAttribute('href', text);
+  }
+
+  function downloadImage() {
+    const qrCodeImg = document.getElementById('qrcode');
+    const link = document.createElement('a');
+    link.download = sanitizeFilename(qrCodeImg?.getAttribute('alt')!);
+    link.href =
+      qrCodeImg?.getAttribute('src') !== null
+        ? qrCodeImg?.getAttribute('src')!
+        : '';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  const textInput = document.getElementById('url');
+
+  if ('URLSearchParams' in window) {
+    const url = new URL(window.location.toString());
+    const text = url.searchParams.get('text');
+    if (text) {
+      textInput?.setAttribute('value', text);
+      updateQrcode(text);
+      const testLinkButton = document.getElementById('test-link');
+      testLinkButton?.setAttribute('href', text);
+    }
+  }
+
+  const downloadImageWithDebounce = debounce(downloadImage, 600);
+
+  const downloadButton = document.getElementById('download');
+  downloadButton?.addEventListener('click', downloadImageWithDebounce);
+
+  const qrCodeImg = document.getElementById('qrcode');
+  qrCodeImg?.addEventListener('click', downloadImageWithDebounce);
+
+  const handleInputChangesWithDebounce = debounce(handleInputChanges, 600);
+
+  textInput?.addEventListener('keyup', handleInputChangesWithDebounce);
+  textInput?.addEventListener('change', handleInputChangesWithDebounce);
+</script>
+
+<style>
+  main {
+    margin: auto;
+    padding: 1rem;
+    width: 800px;
+    max-width: calc(100% - 2rem);
+    color: white;
+    font-size: 20px;
+    line-height: 1.6;
+  }
+  .astro-a {
+    position: absolute;
+    top: -32px;
+    left: 50%;
+    transform: translatex(-50%);
+    width: 220px;
+    height: auto;
+    z-index: -1;
+  }
+  h1 {
+    font-size: 4rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    margin-bottom: 1em;
+  }
+  .text-gradient {
+    background-image: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 400%;
+    background-position: 0%;
+  }
+  .instructions {
+    margin-bottom: 2rem;
+    border: 1px solid rgba(var(--accent-light), 25%);
+    background: linear-gradient(
+      rgba(var(--accent-dark), 66%),
+      rgba(var(--accent-dark), 33%)
+    );
+    padding: 1.5rem;
+    border-radius: 8px;
+  }
+  .instructions code {
+    font-size: 0.8em;
+    font-weight: bold;
+    background: rgba(var(--accent-light), 12%);
+    color: rgb(var(--accent-light));
+    border-radius: 4px;
+    padding: 0.3em 0.4em;
+  }
+  .instructions strong {
+    color: rgb(var(--accent-light));
+  }
+  .link-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(24ch, 1fr));
+    gap: 2rem;
+    padding: 0;
+  }
+  img:hover {
+    cursor: pointer;
+  }
+</style>
