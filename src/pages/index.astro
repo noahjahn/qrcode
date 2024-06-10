@@ -8,11 +8,10 @@ import Layout from '../layouts/Layout.astro';
       Welcome to <span class="text-gradient">Nobey's QR Code Generator</span>
     </h1>
     <p class="instructions rounded-lg">
-      Yeah, this is literally just a templated example from Astro because I'm
-      lazy. You can use this page to generate a QR Code. It works completely in
-      your browser, I'm not hosting anything to steal your data. Though, this is
-      going to be hosted on GitHub pages so Microsoft is probably farming you
-      for your data. Sorry &#129335
+      You can use this page to generate and download a QR Code. It works
+      completely in your browser and I'm not hosting anything to steal your
+      data. This is going to be hosted on GitHub pages so Microsoft is probably
+      farming you for your data. Sorry &#129335
     </p>
 
     <div class="flex flex-col md:flex-row md:space-x-4 max-md:space-y-4 mb-4">
@@ -43,7 +42,7 @@ import Layout from '../layouts/Layout.astro';
     </div>
     <button
       id="download"
-      class="block mb-4 py-1 px-8 m-auto border rounded-lg dark:bg-green-600 dark:border-green-500 dark:text-white"
+      class="hidden block max-md:w-full mb-4 py-1 px-8 m-auto border rounded-lg dark:bg-green-600 dark:border-green-500 dark:text-white"
       >Download</button
     >
     <img id="qrcode" class="m-auto rounded-lg" />
@@ -64,12 +63,28 @@ import Layout from '../layouts/Layout.astro';
   };
 
   function updateQrcode(text: string) {
-    QRCode.toDataURL(text, function (error, dataUrl) {
-      if (error) return console.error(error);
-      const qrCodeImg = document.getElementById('qrcode');
-      qrCodeImg?.setAttribute('src', dataUrl);
-      qrCodeImg?.setAttribute('alt', sanitizeFilename(text));
-    });
+    const downloadButton = document.getElementById('download');
+    const qrCodeImg = document.getElementById('qrcode');
+
+    if (text) {
+      downloadButton?.classList.remove('hidden');
+      qrCodeImg?.setAttribute('alt', sanitizeFilename(`${text}.png`));
+      QRCode.toDataURL(
+        text,
+        {
+          errorCorrectionLevel: 'Q',
+          scale: 5,
+        },
+        (error, dataUrl) => {
+          if (error) return console.error(error);
+          qrCodeImg?.setAttribute('src', dataUrl);
+        }
+      );
+    } else {
+      downloadButton?.classList.add('hidden');
+      qrCodeImg?.setAttribute('alt', '');
+      qrCodeImg?.setAttribute('src', '');
+    }
   }
 
   function handleInputChanges(event: Event) {
